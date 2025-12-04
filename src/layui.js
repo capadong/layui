@@ -755,7 +755,10 @@
     var result = {
       os: (function () {
         // 底层操作系统
-        if (/windows/.test(agent)) {
+        // 底层操作系统：优先识别鸿蒙，再兼容原有系统
+        if (/harmonyos/.test(agent)) {
+          return 'harmony'; // 新增：鸿蒙系统标识
+        } else if (/windows/.test(agent)) {
           return 'windows';
         } else if (/linux/.test(agent)) {
           return 'linux';
@@ -771,7 +774,13 @@
           ? (agent.match(/msie\s(\d+)/) || [])[1] || '11' // 由于 ie11 并没有 msie 的标识
           : false;
       })(),
-      weixin: getVersion('micromessenger') // 是否微信
+      weixin: getVersion('micromessenger'), // 是否微信
+      // 新增：华为设备标识（含荣耀，原华为子品牌）
+      huawei: /huawei|honor/.test(agent),
+      // 新增：鸿蒙系统版本（如 "4.0"）
+      harmonyVersion: getVersion('harmonyos'),
+      // 新增：华为浏览器版本（如 "12.0.0.300"）
+      huaweiBrowserVersion: getVersion('huaweibrowser')
     };
 
     // 任意的 key
@@ -782,7 +791,10 @@
     // 移动设备
     result.android = /android/.test(agent);
     result.ios = result.os === 'ios';
-    result.mobile = result.android || result.ios;
+    result.harmony = result.os === 'harmony'; // 新增：鸿蒙系统判断
+     // 移动端 = 安卓 + iOS + 鸿蒙（华为/荣耀设备默认视为移动端，结合触摸检测避免误判）
+    result.mobile = result.android || result.ios || result.harmony || 
+      (result.huawei && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
 
     return result;
   };
